@@ -8,8 +8,8 @@ import retrofit2.http.Path
 import java.util.concurrent.TimeUnit
 
 interface PokemonService {
-    @GET("pokemon/{name}")
-    suspend fun obtenerPokemon(@Path("name") nombre: String): PokemonDto
+    @GET("pokemon/{name}") // Service : te pide los datos
+    suspend fun obtenerPokemon(@Path("name") nombre: String): PokemonDto //Client, lo  que el cliente te pide
 }
 
 object PokemonApi {
