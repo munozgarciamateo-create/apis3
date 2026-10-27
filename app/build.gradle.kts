@@ -1,3 +1,12 @@
+import java.util.Properties
+
+// Datos de SQLite Cloud: se leen de local.properties (no se sube a GitHub)
+val propiedadesLocales = Properties().apply {
+    val archivo = rootProject.file("local.properties")
+    if (archivo.exists()) archivo.inputStream().use { load(it) }
+}
+fun propiedad(nombre: String): String = propiedadesLocales.getProperty(nombre, "")
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -14,10 +23,13 @@ android {
         applicationId = "com.example.apis3"
         minSdk = 24
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "SQLITECLOUD_FUNCTIONS_URL", "\"${propiedad("sqlitecloud.functionsUrl")}\"")
+        buildConfigField("String", "SQLITECLOUD_API_KEY", "\"${propiedad("sqlitecloud.apiKey")}\"")
     }
 
     buildTypes {
@@ -33,6 +45,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

@@ -11,6 +11,9 @@ interface FavoritoDao {
     @Query("SELECT * FROM favoritos ORDER BY agregadoEn DESC")
     fun observarFavoritos(): Flow<List<FavoritoEntity>>
 
+    @Query("SELECT * FROM favoritos")
+    suspend fun obtenerTodos(): List<FavoritoEntity>
+
     @Query("SELECT clave FROM favoritos")
     fun observarClaves(): Flow<List<String>>
 

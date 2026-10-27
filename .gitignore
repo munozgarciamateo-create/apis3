@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+build.nosync/
+
+# Llave de firma (NUNCA subir a GitHub)
+*.jks
+*.keystore

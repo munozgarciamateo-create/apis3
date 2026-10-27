@@ -31,6 +31,11 @@ class FavoritosViewModel(application: Application) : AndroidViewModel(applicatio
             initialValue = FavoritosUiState()
         )
 
+    init {
+        // Al abrir Favoritos: trae lo que haya en SQLite Cloud y sube lo pendiente.
+        viewModelScope.launch { favoritosRepository.sincronizar() }
+    }
+
     fun quitar(clave: String) {
         viewModelScope.launch { favoritosRepository.quitar(clave) }
     }

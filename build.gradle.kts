@@ -3,3 +3,8 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.compose) apply false
 }
+// iCloud no sincroniza carpetas que terminan en ".nosync".
+// Así evita crear copias duplicadas ("Archivo 3.class") que rompen la compilación.
+allprojects {
+    layout.buildDirectory.set(file("build.nosync"))
+}
