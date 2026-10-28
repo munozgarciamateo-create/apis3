@@ -11,6 +11,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp") version "2.3.6"
+    // Firebase: lee app/google-services.json
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -73,6 +75,13 @@ dependencies {
     ksp("androidx.room:room-compiler:2.8.4")
     // Navegación entre pantallas (paso 8.5)
     implementation("androidx.navigation:navigation-compose:2.8.5")
+
+    // Firebase Authentication. El BoM fija versiones compatibles entre sí (por eso firebase-auth no lleva versión)
+    // 34.12.0 y no 35.x: Firebase 35 está compilado con Kotlin 2.4 y este proyecto usa Kotlin 2.2
+    implementation(platform("com.google.firebase:firebase-bom:34.12.0"))
+    implementation("com.google.firebase:firebase-auth")
+    // Permite usar .await() sobre las tareas (Task) de Firebase dentro de corrutinas
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

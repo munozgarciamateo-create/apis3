@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,20 +19,36 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.apis3.presentacion.AuthViewModel
 import com.example.apis3.presentacion.Fuente
 import com.example.apis3.presentacion.MainViewModel
 
+private const val RUTA_LOGIN = "login"
 private const val RUTA_BUSCADOR = "buscador"
 private const val RUTA_FAVORITOS = "favoritos"
 
+/**
+ * El AuthViewModel se crea una sola vez (a nivel de la Activity) y se pasa a las pantallas.
+ * Si cada destino usara viewModel() por su cuenta, el login actualizaría una sesión que App no mira.
+ */
 @Composable
-fun App() {
+fun App(authViewModel: AuthViewModel = viewModel()) {
     val navController = rememberNavController()
+    val usuario by authViewModel.usuario.collectAsState()
+    val haySesion = usuario != null
 
-    NavHost(navController = navController, startDestination = RUTA_BUSCADOR) {
+    NavHost(
+        navController = navController,
+        startDestination = if (haySesion) RUTA_BUSCADOR else RUTA_LOGIN
+    ) {
+        composable(RUTA_LOGIN) {
+            LoginScreen(viewModel = authViewModel)
+        }
         composable(RUTA_BUSCADOR) {
             BuscadorScreen(
-                onVerFavoritos = { navController.navigate(RUTA_FAVORITOS) }
+                onVerFavoritos = { navController.navigate(RUTA_FAVORITOS) },
+                correoUsuario = usuario?.email.orEmpty(),
+                onCerrarSesion = authViewModel::cerrarSesion
             )
         }
         composable(RUTA_FAVORITOS) {
@@ -40,11 +57,24 @@ fun App() {
             )
         }
     }
+
+    // Reacción a los cambios de sesión: al entrar va al buscador; al salir, al login.
+    // `popUpTo(0)` vacía la pila para que "Atrás" no devuelva a una pantalla de otra sesión.
+    LaunchedEffect(haySesion) {
+        val destinoActual = navController.currentDestination?.route
+        if (haySesion && destinoActual == RUTA_LOGIN) {
+            navController.navigate(RUTA_BUSCADOR) { popUpTo(0) }
+        } else if (!haySesion && destinoActual != RUTA_LOGIN) {
+            navController.navigate(RUTA_LOGIN) { popUpTo(0) }
+        }
+    }
 }
 
 @Composable
 private fun BuscadorScreen(
     onVerFavoritos: () -> Unit,
+    correoUsuario: String,
+    onCerrarSesion: () -> Unit,
     vm: MainViewModel = viewModel()
 ) {
     val e by vm.estado.collectAsState()
@@ -62,9 +92,21 @@ private fun BuscadorScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("3 APIs, una pantalla", style = MaterialTheme.typography.headlineSmall)
+            Column(modifier = Modifier.weight(1f)) {
+                Text("3 APIs, una pantalla", style = MaterialTheme.typography.headlineSmall)
+                if (correoUsuario.isNotEmpty()) {
+                    Text(
+                        correoUsuario,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             IconButton(onClick = onVerFavoritos) {
                 Icon(Icons.Default.Favorite, contentDescription = "Ver favoritos", tint = Color(0xFFE53935))
+            }
+            IconButton(onClick = onCerrarSesion) {
+                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Cerrar sesión")
             }
         }
 
