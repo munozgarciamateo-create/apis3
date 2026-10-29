@@ -16,6 +16,11 @@ local.properties
 
 build.nosync/
 
-# Llave de firma (NUNCA subir a GitHub)
+# Llaves de firma y sus contraseñas: NUNCA se suben
+keystore.properties
 *.jks
 *.keystore
+
+# Paquetes generados
+*.aab
+*.apk

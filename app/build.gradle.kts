@@ -15,6 +15,12 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// Datos de la llave de firma. Viven en keystore.properties (fuera de git), nunca en este archivo.
+val keystoreProperties = Properties().apply {
+    val archivo = rootProject.file("keystore.properties")
+    if (archivo.exists()) archivo.inputStream().use { load(it) }
+}
+
 android {
     namespace = "com.example.apis3"
     compileSdk {
@@ -22,11 +28,13 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.apis3"
+        // Identificador en Google Play: único y NO se puede cambiar después de publicar.
+        // (namespace sigue siendo com.example.apis3: es solo el paquete de las clases Kotlin)
+        applicationId = "com.mateomunoz.apis3"
         minSdk = 24
-        targetSdk = 37
-        versionCode = 2
-        versionName = "1.1"
+        targetSdk = 37          // Play exige 36 o más desde el 31/08/2026
+        versionCode = 1         // entero: sube en CADA subida a Play (1, 2, 3...)
+        versionName = "1.0"     // lo que ven los usuarios
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -34,10 +42,28 @@ android {
         buildConfigField("String", "SQLITECLOUD_API_KEY", "\"${propiedad("sqlitecloud.apiKey")}\"")
     }
 
+    signingConfigs {
+        create("release") {
+            // Si keystore.properties no existe (por ejemplo en la máquina de un compañero), no se firma
+            if (keystoreProperties.isNotEmpty()) {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // R8 (DSL nuevo de AGP 9.3+): reduce y ofusca el código y quita recursos sin usar.
+            // Equivale a isMinifyEnabled + isShrinkResources + proguard-android-optimize.txt.
+            // Las reglas propias van en src/main/keepRules/rules.keep
             optimization {
-                enable = false
+                enable = true
+            }
+            if (keystoreProperties.isNotEmpty()) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }

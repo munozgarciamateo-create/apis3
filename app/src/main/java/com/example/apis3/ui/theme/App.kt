@@ -8,6 +8,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,6 +36,7 @@ private const val RUTA_FAVORITOS = "favoritos"
 fun App(authViewModel: AuthViewModel = viewModel()) {
     val navController = rememberNavController()
     val usuario by authViewModel.usuario.collectAsState()
+    val estadoAuth by authViewModel.uiState.collectAsState()
     val haySesion = usuario != null
 
     NavHost(
@@ -48,7 +50,11 @@ fun App(authViewModel: AuthViewModel = viewModel()) {
             BuscadorScreen(
                 onVerFavoritos = { navController.navigate(RUTA_FAVORITOS) },
                 correoUsuario = usuario?.email.orEmpty(),
-                onCerrarSesion = authViewModel::cerrarSesion
+                onCerrarSesion = authViewModel::cerrarSesion,
+                onEliminarCuenta = authViewModel::eliminarCuenta,
+                errorCuenta = estadoAuth.error,
+                eliminandoCuenta = estadoAuth.cargando,
+                onCerrarErrorCuenta = authViewModel::limpiarMensajes
             )
         }
         composable(RUTA_FAVORITOS) {
@@ -75,9 +81,32 @@ private fun BuscadorScreen(
     onVerFavoritos: () -> Unit,
     correoUsuario: String,
     onCerrarSesion: () -> Unit,
+    onEliminarCuenta: () -> Unit,
+    errorCuenta: String?,
+    eliminandoCuenta: Boolean,
+    onCerrarErrorCuenta: () -> Unit,
     vm: MainViewModel = viewModel()
 ) {
     val e by vm.estado.collectAsState()
+    var menuAbierto by remember { mutableStateOf(false) }
+    var confirmarEliminar by remember { mutableStateOf(false) }
+
+    if (confirmarEliminar) {
+        AlertDialog(
+            onDismissRequest = { confirmarEliminar = false },
+            title = { Text("¿Eliminar tu cuenta?") },
+            text = { Text("Se borrará tu cuenta ($correoUsuario) de forma permanente. Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmarEliminar = false
+                    onEliminarCuenta()
+                }) { Text("Eliminar", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmarEliminar = false }) { Text("Cancelar") }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -105,8 +134,36 @@ private fun BuscadorScreen(
             IconButton(onClick = onVerFavoritos) {
                 Icon(Icons.Default.Favorite, contentDescription = "Ver favoritos", tint = Color(0xFFE53935))
             }
-            IconButton(onClick = onCerrarSesion) {
-                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Cerrar sesión")
+            Box {
+                IconButton(onClick = { menuAbierto = true }, enabled = !eliminandoCuenta) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "Opciones de la cuenta")
+                }
+                DropdownMenu(expanded = menuAbierto, onDismissRequest = { menuAbierto = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Cerrar sesión") },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null) },
+                        onClick = {
+                            menuAbierto = false
+                            onCerrarSesion()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Eliminar mi cuenta", color = MaterialTheme.colorScheme.error) },
+                        onClick = {
+                            menuAbierto = false
+                            confirmarEliminar = true
+                        }
+                    )
+                }
+            }
+        }
+
+        if (eliminandoCuenta) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+
+        errorCuenta?.let {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
+                TextButton(onClick = onCerrarErrorCuenta) { Text("OK") }
             }
         }
 
